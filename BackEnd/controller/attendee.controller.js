@@ -157,9 +157,27 @@ async function getEvent(req, res) {
 async function createTicket(req, res) {
   try {
     const { userID, event, status } = req.body;
-    const attendee = await Attendee.findById(userID);
+    const attendee = await Attendee.findById(userID).select("name email");
+    const eventDetails = await Event.findById(event).select(
+      "name type description genre price category"
+    );
 
-    const qrcodeData = await qrcode.toDataURL(`${userID}-${event}`);
+    
+
+
+    const qrPayLoad = `Event: ${eventDetails.name}, 
+      Type: ${eventDetails.type}, 
+      Description: ${eventDetails.description}, 
+      Genre: ${eventDetails.genre}, 
+      Price: ${eventDetails.price}, 
+      Category: ${eventDetails.category} 
+      | Attendee: ${attendee.name}, 
+      Email: ${attendee.email} 
+      | Status: ${status}`;
+
+    // const ticketURL = `${userID}-${event}`;
+
+    const qrcodeData = await qrcode.toDataURL(qrPayLoad);
 
     const ticket = await Ticket.create({
       ...req.body,

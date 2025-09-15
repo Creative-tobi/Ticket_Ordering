@@ -246,7 +246,7 @@ const AttendeeDashboard = () => {
                             <img
                               src={tk.qrcode}
                               alt="Ticket Qr code"
-                              className="w-16 h-16"
+                              className="w-36 h-36"
                             />
                           </div>
                         </div>
