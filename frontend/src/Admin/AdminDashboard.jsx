@@ -52,6 +52,7 @@ const AdminDashboard = () => {
     try {
       await Api.delete(`/admin/deleteevent/${id}`);
       setEvent(event.filter((s) => s._id !== id));
+      alert("Event deleted successfully");
     } catch (error) {
       console.error("Delete event error:", err.response?.data || err.message);
       alert("Failed to delete event");
@@ -62,6 +63,7 @@ const AdminDashboard = () => {
     try {
       await Api.delete(`/admin/deleteAttendee/${id}`);
       setEvent(attendee.filter((s) => s._id !== id));
+      alert("Attendee deleted successfully");
     } catch (error) {
       console.error(
         "Delete attendee error:",
@@ -75,6 +77,7 @@ const AdminDashboard = () => {
     try {
       await Api.delete(`/admin/deleteTicket/${id}`);
       setEvent(ticket.filter((s) => s._id !== id));
+      alert("Ticket deleted successfully");
     } catch (error) {
       console.error(
         "Delete tickets error:",
@@ -88,6 +91,7 @@ const AdminDashboard = () => {
     try {
       await Api.delete(`/admin/deleteOrganizer/${id}`);
       setEvent(organizer.filter((s) => s._id !== id));
+      alert("Organizer deleted successfully");
     } catch (error) {
       console.error(
         "Delete organizer error:",
