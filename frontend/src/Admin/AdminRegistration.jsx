@@ -27,12 +27,12 @@ const AdminRegistration = () => {
       if (res.data.token) localStorage.setItem("token", res.data.token);
       if (res.data.user?._id)
         localStorage.setItem("AdminID", res.data.user._id);
-      if(res.data.user?.email)
-      localStorage.setItem("email", res.data.user.email);
+      // if(res.data.user?.email)
+      // localStorage.setItem("email", res.data.user.email);
     if (res.data.admin?.email)
-      localStorage.setItem("organizeremail", res.data.admin.email);
+      localStorage.setItem("adminemail", res.data.admin.email);
     if (res.data.admin?.OTP)
-      localStorage.setItem("organizerOTP", res.data.admin.OTP);
+      localStorage.setItem("adminOTP", res.data.admin.OTP);
 
 
       alert("Admin registered successfully!");

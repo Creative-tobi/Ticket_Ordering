@@ -27,10 +27,10 @@ const AttendeeRegister = () => {
       if (res.data.token) localStorage.setItem("token", res.data.token);
       if (res.data.user?._id)
         localStorage.setItem("AttendeeID", res.data.user._id);
-        if (res.data.user?.email)
-          localStorage.setItem("attendeeemail", res.data.user.email);
-        if (res.data.user?.OTP)
-          localStorage.setItem("attendeeOTP", res.data.user.OTP);
+        if (res.data.Attendee?.email)
+          localStorage.setItem("attendeeemail", res.data.Attendee.email);
+        if (res.data.Attendee?.OTP)
+          localStorage.setItem("attendeeOTP", res.data.Attendee.OTP);
 
 
       alert("Attendee registered successfully!");
