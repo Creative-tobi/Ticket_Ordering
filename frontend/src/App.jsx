@@ -9,6 +9,9 @@ import AdminLogin from './Admin/AdminLogin';
 import AdminRegistration from './Admin/AdminRegistration';
 import AdminDashboard from './Admin/AdminDashboard';
 import OrganizerRegister from './Organizer/OrganizerRegister';
+import AttendeeOTP from './Attendee/AttendeeOTP';
+import OrganizerOTP from './Organizer/OrganizerOTP';
+import AdminOTP from './Admin/AdminOTP';
 
 const App = () => {
   return (
@@ -18,32 +21,41 @@ const App = () => {
 
       <BrowserRouter>
         <Routes>
+          {/* Organizer information */}
           <Route path="/organizer/login" element={<OrganizerLogin />} />
           <Route path="/organizer/register" element={<OrganizerRegister />} />
           <Route path="/organizer/dashboard" element={<OrganizerDashboard />} />
+          <Route path="/organizer/verifyOTP" element={<OrganizerOTP/>}/>
           <Route
             path="/organizer/dashboard/events"
             element={<OrganizerDashboard />}
           />
 
+          {/* Attendee information */}
           <Route path="/attendee/login" element={<AttendeeLogin />} />
           <Route path="/attendee/register" element={<AttendeeRegister />} />
           <Route path="/attendee/dashboard" element={<AttendeeDashboard />} />
+          <Route path='/attendee/verifyOTP' element={<AttendeeOTP/>}/>
           <Route
             path="/attendee/dashboard/tickets"
             element={<AttendeeDashboard />}
           />
 
+          {/* Admin information */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/register" element={<AdminRegistration />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/dashboard/tickets" element={<AdminDashboard />} />
           <Route path="/admin/dashboard/events" element={<AdminDashboard />} />
+          <Route path='/admin/verifyOTP' element={<AdminOTP/>}/>
           <Route
             path="/admin/dashboard/organizer"
             element={<AdminDashboard />}
           />
-          <Route path="/admin/dashboard/attendee" element={<AdminDashboard />} />
+          <Route
+            path="/admin/dashboard/attendee"
+            element={<AdminDashboard />}
+          />
 
           <Route path="/" element={<AttendeeLogin />} />
         </Routes>

@@ -8,6 +8,8 @@ const express = require("express");
    updateEvent,
    createTicket,
    getTickets,
+  verifyOTP,
+  resendOTP
  } = require("../controller/organizer.controller");
  const authmiddleware = require("../middleware/auth.middleware");
  const roleMiddleware = require("../middleware/role.middleware");
@@ -24,5 +26,8 @@ const express = require("express");
 
  router.post("/organizer/ticket/:id", createTicket);
  router.get("/organizer/gettickets", getTickets);
+
+  router.post("/organizer/verifyOtp", verifyOTP);
+  router.put("/organizer/resendOtp", resendOTP);
 
  module.exports = router;

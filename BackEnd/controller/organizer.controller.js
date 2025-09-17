@@ -9,7 +9,7 @@ const sendMail = require("../service/nodemailer");
 //Register organizer
 async function createOrganizer(req, res) {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, OTP } = req.body;
 
     const existingOrganizer = await Organizer.findOne({ email });
     if (existingOrganizer) {
@@ -20,10 +20,16 @@ async function createOrganizer(req, res) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    //Creating OTP
+    const otp = Math.floor(1000 + Math.random() * 9000);
+    console.log(otp);
+
     const newOrganizer = new Organizer({
       name,
       email,
       password: hashedPassword,
+      OTP: otp,
+      otpExpires: Date.now() + 10 * 60 * 1000,
     });
 
     await newOrganizer.save();
@@ -48,6 +54,7 @@ Welcome to OPEN EDITORS! Your organizer account has been created successfully.
 Account Details:
 Name: ${name}
 Email: ${email}
+OTP: ${otp}
 Role: Organizer
 
 You can now log in to your organizer account and start creating and managing events.
@@ -66,10 +73,80 @@ The OPEN EDITORS Team
         id: newOrganizer._id,
         name: newOrganizer.name,
         email: newOrganizer.email,
+        OTP: newOrganizer.OTP,
       },
     });
   } catch (error) {
     console.error(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+}
+
+// creating new otp after expire
+async function resendOTP(req, res) {
+  try {
+    const { email } = req.body; 
+    const organizer = await Organizer.findOne(email);
+
+    if (!organizer) {
+      return res.status(404).send({ message: "Organizer not found" });
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(1000 + Math.random() * 9000);
+
+    organizer.OTP = otp;
+    organizer.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    await organizer.save();
+
+    // Send email with new OTP
+    const subject = "Your OTP Code";
+    const message = `Hello ${organizer.name},
+
+Your new OTP code is ${otp}. It will expire in 10 minutes.
+
+Best regards,
+The OPEN EDITORS Team`;
+
+    await sendMail.sendEmail(organizer.email, subject, message);
+
+    res.status(200).send({
+      message: "New OTP sent successfully",
+      email: organizer.email,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+}
+
+async function verifyOTP(req, res) {
+  const { email, OTP } = req.body;
+  try {
+    if (!email || !OTP) {
+      return res.status(400).send({ message: "Invalid credential" });
+    }
+
+    const organizer = await Organizer.findOne({ email });
+    if (!organizer) {
+      return res.status(404).send({ message: "Organizer not found" });
+    }
+
+    if (organizer.OTP !== Number(OTP))
+      return res.status(400).send({ Message: "invalid OTP" });
+    if (organizer.otpExpires < Date.now())
+      return res
+        .status(400)
+        .send({ message: "OTP expired, please request a new one" });
+
+    organizer.isVerified = true;
+    organizer.OTP = null;
+    organizer.otpExpires = null;
+    await organizer.save();
+
+    res.status(200).send({ message: "Account verified successfully" });
+  } catch (error) {
+    error.console(error);
     res.status(500).send({ message: "Internal server error" });
   }
 }
@@ -90,6 +167,11 @@ async function organizerLogin(req, res) {
     const isValidPassword = await bcrypt.compare(password, organizer.password);
     if (!isValidPassword) {
       return res.status(400).send({ error: "Invalid password" });
+    }
+
+    const otpverify = await Organizer.findOne({ email, isVerified: true });
+    if (!otpverify) {
+      return res.status(400).send({ message: "Please verify your account" });
     }
 
     const token = jwt.sign(
@@ -308,4 +390,6 @@ module.exports = {
   updateEvent,
   createTicket,
   getTickets,
+  verifyOTP,
+  resendOTP,
 };

@@ -27,9 +27,12 @@ const OrganizerRegister = () => {
       if (res.data.token) localStorage.setItem("token", res.data.token);
       if (res.data.user?._id)
         localStorage.setItem("OrganizerID", res.data.user._id);
+      if(res.data.organizer?.email) localStorage.setItem("organizeremail", res.data.organizer.email);
+      if (res.data.organizer?.OTP)
+         localStorage.setItem("organizerOTP", res.data.organizer.OTP);
 
       alert("Organizer registered successfully!");
-      navigate("/organizer/login");
+      navigate("/organizer/verifyOTP");
     } catch (error) {
       console.error(
         "Organizer register error:",

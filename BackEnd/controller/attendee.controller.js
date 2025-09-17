@@ -10,7 +10,7 @@ const qrcode = require("qrcode");
 //creating attendee
 async function createAttendee(req, res) {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, OTP } = req.body;
     const existingAttendee = await Attendee.findOne({ email });
     if (existingAttendee) {
       return res.status(400).send({ error: "Attendeeemail already exist" });
@@ -20,10 +20,16 @@ async function createAttendee(req, res) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    //Generating OTP
+    const otp = Math.floor(1000 + Math.random() * 9000);
+    console.log(otp);
+
     const newAttendee = new Attendee({
       name,
       email,
       password: hashedPassword,
+      OTP: otp,
+      otpExpires: Date.now() + 10 * 60 * 1000,
     });
 
     await newAttendee.save();
@@ -48,6 +54,7 @@ Welcome to OPEN EDITORS! Your attendee account has been created successfully.
 Account Details:
 Name: ${name}
 Email: ${email}
+OTP: ${otp}
 Role: Attendee
 
 You can now log in to your attendee account and start purchasing tickets for events.
@@ -66,10 +73,83 @@ The OPEN EDITORS Team
         id: newAttendee._id,
         name: newAttendee.name,
         email: newAttendee.email,
+        OTP: newAttendee.OTP,
       },
     });
   } catch (error) {
     console.error(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+}
+
+
+// creating new otp after expire
+async function resendOTP(req, res) {
+  try {
+    const { email } = req.body; 
+    const attendee = await Attendee.findOne(email);
+
+    if (!attendee) {
+      return res.status(404).send({ message: "Attendee not found" });
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(1000 + Math.random() * 9000);
+
+    attendee.OTP = otp;
+    attendee.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    await attendee.save();
+
+    // Send email with new OTP
+    const subject = "Your OTP Code";
+    const message = `Hello ${attendee.name},
+
+Your new OTP code is ${otp}. It will expire in 10 minutes.
+
+Best regards,
+The OPEN EDITORS Team`;
+
+    await sendMail.sendEmail(attendee.email, subject, message);
+
+    res.status(200).send({
+      message: "New OTP sent successfully",
+      email: attendee.email,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+}
+
+
+//verify OTP
+async function verifyOTP(req, res) {
+  const { email, OTP } = req.body;
+  try {
+    if (!email || !OTP) {
+      return res.status(400).send({ message: "Invalid credential" });
+    }
+
+    const attendee = await Attendee.findOne({ email });
+    if (!attendee) {
+      return res.status(404).send({ message: "Attendee not found" });
+    }
+
+    if (attendee.OTP !== Number(OTP))
+      return res.status(400).send({ Message: "invalid OTP" });
+    if (attendee.otpExpires < Date.now())
+      return res
+        .status(400)
+        .send({ message: "OTP expired, please request a new one" });
+
+    attendee.isVerified = true;
+    attendee.OTP = null;
+    attendee.otpExpires = null;
+    await attendee.save();
+
+    res.status(200).send({ message: "Account verified successfully" });
+  } catch (error) {
+    error.console(error);
     res.status(500).send({ message: "Internal server error" });
   }
 }
@@ -90,6 +170,11 @@ async function attedeeLogin(req, res) {
     const isValidPassword = await bcrypt.compare(password, attendee.password);
     if (!isValidPassword) {
       return res.status(400).send({ error: "Invalid password" });
+    }
+
+    const otpverify = await Attendee.findOne({ email, isVerified: true });
+    if (!otpverify) {
+      return res.status(400).send({ message: "Please verify your account" });
     }
 
     const token = jwt.sign(
@@ -162,9 +247,6 @@ async function createTicket(req, res) {
       "name type description genre price category"
     );
 
-    
-
-
     const qrPayLoad = `Event: ${eventDetails.name}, 
       Type: ${eventDetails.type}, 
       Description: ${eventDetails.description}, 
@@ -233,6 +315,7 @@ async function getTickets(req, res) {
     res.status(201).send({ message: "Book fetched", allEvent });
   } catch (error) {}
 }
+
 module.exports = {
   createAttendee,
   attendeeProfile,
@@ -240,4 +323,6 @@ module.exports = {
   getEvent,
   createTicket,
   getTickets,
+  verifyOTP,
+  resendOTP,
 };

@@ -11,6 +11,8 @@ const {
   getTickets,
   getEvent,
   deleteTicket,
+  verifyOTP,
+  resendOTP
 } = require("../controller/admin.controller");
 const authmiddleware = require("../middleware/auth.middleware");
 const roleMiddleware = require("../middleware/role.middleware");
@@ -63,4 +65,6 @@ router.delete(
   deleteTicket
 );
 
+router.post("/admin/verifyOtp", verifyOTP);
+router.put("/admin/resendOtp", resendOTP);
 module.exports = router;

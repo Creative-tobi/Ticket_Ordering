@@ -5,6 +5,9 @@ const organizerSchema = new mongoose.Schema({
   email: { type: String, require: true, unique: true },
   password: { type: String, require: true, unique: true },
   role: { type: String, require: true, default: "organizer" },
+  OTP: { type: Number, default: null },
+  otpExpires: Date,
+  isVerified: { type: Boolean, default: false },
 });
 
 const eventSchema = new mongoose.Schema({
@@ -26,9 +29,6 @@ const ticketSchema = new mongoose.Schema({
 });
 
 
-// module.exports = mongoose.model('Organizer', organizerSchema);
-// module.exports = mongoose.model("Event", eventSchema);
-// module.exports = mongoose.model('Ticket', ticketSchema);
 
 module.exports = {
   Organizer: mongoose.model("Organizer", organizerSchema),

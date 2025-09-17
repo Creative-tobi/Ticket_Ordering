@@ -10,7 +10,7 @@ const sendMail = require("../service/nodemailer");
 //Register Admin
 async function createAdmin(req, res) {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, OTP } = req.body;
 
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
@@ -21,10 +21,16 @@ async function createAdmin(req, res) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    //creating OTP
+    const otp = Math.floor(1000 + Math.random() * 9000);
+    console.log(otp);
+
     const newAdmin = new Admin({
       name,
       email,
       password: hashedPassword,
+      OTP: otp,
+      otpExpires: Date.now() + 10 * 60 * 1000,
     });
 
     await newAdmin.save();
@@ -55,6 +61,7 @@ async function createAdmin(req, res) {
     Account Details:
     Name: ${name}
     Email: ${email}
+    OTP: ${otp}
     Role: Admin
 
     You can now log in to your admin account and start managing the platform.
@@ -71,10 +78,80 @@ async function createAdmin(req, res) {
         id: newAdmin._id,
         name: newAdmin.name,
         email: newAdmin.email,
+        OTP: newAdmin.OTP,
       },
     });
   } catch (error) {
     console.error(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+}
+
+//resend OTP
+async function resendOTP(req, res) {
+  try {
+    const { email } = req.body; // Admin ID from route param
+    const admin = await Admin.findOne(email);
+
+    if (!admin) {
+      return res.status(404).send({ message: "Admin not found" });
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(1000 + Math.random() * 9000);
+
+    admin.OTP = otp;
+    admin.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    await admin.save();
+
+    // Send email with new OTP
+    const subject = "Your OTP Code";
+    const message = `Hello ${admin.name},
+
+Your new OTP code is ${otp}. It will expire in 10 minutes.
+
+Best regards,
+The OPEN EDITORS Team`;
+
+    await sendMail.sendEmail(admin.email, subject, message);
+
+    res.status(200).send({
+      message: "New OTP sent successfully",
+      email: admin.email,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+}
+//verify OTP
+async function verifyOTP(req, res) {
+  const { email, OTP } = req.body;
+  try {
+    if (!email || !OTP) {
+      return res.status(400).send({ message: "Invalid credential" });
+    }
+
+    const admin = await Admin.findOne({ email });
+    if (!admin) {
+      return res.status(404).send({ message: "Admin not found" });
+    }
+
+    if (admin.OTP !== Number(OTP))
+      return res.status(400).send({ Message: "invalid OTP" });
+    if (admin.otpExpires < Date.now())
+      return res
+        .status(400)
+        .send({ message: "OTP expired, please request a new one" });
+
+    admin.isVerified = true;
+    admin.OTP = null;
+    admin.otpExpires = null;
+    await admin.save();
+
+    res.status(200).send({ message: "Account verified successfully" });
+  } catch (error) {
+    error.console(error);
     res.status(500).send({ message: "Internal server error" });
   }
 }
@@ -95,6 +172,11 @@ async function adminLogin(req, res) {
     const isValidPassword = await bcrypt.compare(password, admin.password);
     if (!isValidPassword) {
       return res.status(400).send({ error: "Invalid password" });
+    }
+
+    const otpverify = await Admin.findOne({ email, isVerified: true });
+    if (!otpverify) {
+      return res.status(400).send({ message: "Please verify your account" });
     }
 
     const token = jwt.sign(
@@ -347,4 +429,6 @@ module.exports = {
   getTickets,
   getEvent,
   deleteTicket,
+  verifyOTP,
+  resendOTP,
 };
